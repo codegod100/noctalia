@@ -393,6 +393,7 @@ void MainLoop::run() {
     }
 
     const auto nowBeforePoll = std::chrono::steady_clock::now();
+    bool sourceWantsImmediate = false;
     for (auto* source : sources) {
       const std::size_t startIdx = source->addPollFds(pollFds);
       sourceStartIndices.push_back(startIdx);
@@ -426,12 +427,21 @@ void MainLoop::run() {
       const auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(it->second - nowBeforePoll).count();
       const int remainingMs =
           remaining < 0 ? 0 : static_cast<int>(std::min<std::int64_t>(remaining, std::numeric_limits<int>::max()));
+      if (remainingMs == 0) {
+        sourceWantsImmediate = true;
+      }
       if (pollTimeout < 0 || remainingMs < pollTimeout) {
         pollTimeout = remainingMs;
       }
     }
     if (Surface::hasPendingFrameWork() || Surface::hasPendingRenders()) {
-      pollTimeout = 0;
+      // Cap surface-driven frame work to ~60Hz unless an input/source explicitly
+      // needs immediate dispatch. Without this floor, a widget that continuously
+      // requests frame ticks or redraws forces timeout=0, starving Wayland
+      // dispatch and causing multi-second wl_display_dispatch_pending stalls.
+      if (!sourceWantsImmediate) {
+        pollTimeout = std::max(pollTimeout, 16);
+      }
     }
 
     // If the flush was blocked, raise the timeout floor so we actually wait
