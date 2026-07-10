@@ -38,16 +38,49 @@ jobs:
 
       - name: Stage release artifacts
         run: |
+          set -euo pipefail
           mkdir -p dist
+
           # Find the built executable in buck-out.
           BINARY=$(find buck-out -name noctalia -type f -executable -print -quit)
           if [ -z "$BINARY" ]; then
             echo "Could not find built noctalia binary" >&2
             exit 1
           fi
-          cp "$BINARY" dist/noctalia-x86_64-linux
-          chmod +x dist/noctalia-x86_64-linux
-          dist/noctalia-x86_64-linux --version
+
+          # Build a self-contained tarball: binary + all shared libraries.
+          # The GitHub-hosted runner links against Nix store libs, so we bundle
+          # the closure so the binary works on systems without those exact paths.
+          mkdir -p dist/noctalia/lib
+
+          # Collect dependencies from the original binary (which still has Nix
+          # store RUNPATH) so ldd can resolve everything before we repatch it.
+          collect_libs() {
+            local bin=$1
+            local seen_file=$2
+            local needed
+            needed=$(ldd "$bin" 2>/dev/null | awk '/=> \//{print $3}' | sort -u)
+            for lib in $needed; do
+              if [ -f "$lib" ] && ! grep -qx "$lib" "$seen_file" 2>/dev/null; then
+                echo "$lib" >> "$seen_file"
+                collect_libs "$lib" "$seen_file"
+              fi
+            done
+          }
+          collect_libs "$BINARY" /tmp/seen_libs.txt
+
+          cp "$BINARY" dist/noctalia/noctalia
+          chmod +x dist/noctalia/noctalia
+          patchelf --set-rpath '$ORIGIN/lib' dist/noctalia/noctalia
+
+          # --remove-destination avoids failures when copying into a directory
+          # that already contains read-only library files.
+          while IFS= read -r lib; do
+            cp -L --remove-destination "$lib" dist/noctalia/lib/
+          done < /tmp/seen_libs.txt
+
+          dist/noctalia/noctalia --version
+          tar -czf dist/noctalia-x86_64-linux.tar.gz -C dist noctalia
 
           # Source tarball (without Nix/buck2 internals).
           mkdir -p ../noctalia-release
@@ -90,7 +123,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/noctalia-x86_64-linux
+            dist/noctalia-x86_64-linux.tar.gz
             dist/noctalia-${{ github.ref_name }}.tar.gz
             dist/noctalia-latest.tar.gz
           body_path: release_notes.md

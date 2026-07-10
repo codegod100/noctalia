@@ -26,6 +26,9 @@ pkgs.mkShell {
     findutils
     python3
 
+    # Release bundling
+    patchelf
+
     # Debugging
     gdb
   ];
