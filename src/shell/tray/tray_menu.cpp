@@ -686,10 +686,14 @@ void TrayMenu::ensureSurface() {
   auto* instPtr = inst.get();
 
   inst->surface->setConfigureCallback([instPtr](uint32_t /*width*/, uint32_t /*height*/) {
-    instPtr->surface->requestLayout();
+    if (instPtr->surface != nullptr) {
+      instPtr->surface->requestLayout();
+    }
   });
   inst->surface->setPrepareFrameCallback([this, instPtr](bool needsUpdate, bool needsLayout) {
-    prepareMainMenuFrame(*instPtr, needsUpdate, needsLayout);
+    if (instPtr->surface != nullptr) {
+      prepareMainMenuFrame(*instPtr, needsUpdate, needsLayout);
+    }
   });
   inst->surface->setDismissedCallback([this]() { close(); });
 
@@ -1160,9 +1164,15 @@ void TrayMenu::openSubmenuAtLevel(std::size_t levelIndex, std::int32_t parentEnt
   inst->chrome = chrome;
   auto* instPtr = inst.get();
 
-  inst->surface->setConfigureCallback([instPtr](uint32_t /*w*/, uint32_t /*h*/) { instPtr->surface->requestLayout(); });
+  inst->surface->setConfigureCallback([instPtr](uint32_t /*w*/, uint32_t /*h*/) {
+    if (instPtr->surface != nullptr) {
+      instPtr->surface->requestLayout();
+    }
+  });
   inst->surface->setPrepareFrameCallback([this, levelIndex, instPtr](bool needsUpdate, bool needsLayout) {
-    prepareSubmenuFrame(levelIndex, *instPtr, needsUpdate, needsLayout);
+    if (instPtr->surface != nullptr) {
+      prepareSubmenuFrame(levelIndex, *instPtr, needsUpdate, needsLayout);
+    }
   });
   inst->surface->setDismissedCallback([this, levelIndex]() { closeSubmenusFrom(levelIndex); });
 

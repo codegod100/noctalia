@@ -347,7 +347,9 @@ namespace shell::dock {
     auto entryActions = entry.actions;
 
     menu->surface->setConfigureCallback([menuPtr](std::uint32_t /*w*/, std::uint32_t /*h*/) {
-      menuPtr->surface->requestLayout();
+      if (menuPtr->surface != nullptr) {
+        menuPtr->surface->requestLayout();
+      }
     });
     menu->surface->setPrepareFrameCallback([&platform, &config, &renderContext, menuPtr, entries, entryActions,
                                             callbacks, isPinned,

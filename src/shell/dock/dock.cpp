@@ -621,7 +621,9 @@ void Dock::createInstance(const WaylandOutput& output) {
 
   auto* inst = instance.get();
   instance->surface->setConfigureCallback([inst](std::uint32_t /*w*/, std::uint32_t /*h*/) {
-    inst->surface->requestLayout();
+    if (inst->surface != nullptr) {
+      inst->surface->requestLayout();
+    }
   });
   instance->surface->setPrepareFrameCallback([this, inst](bool needsUpdate, bool needsLayout) {
     assertDockInitialized(m_platform, m_config, m_renderContext);

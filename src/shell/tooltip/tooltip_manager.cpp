@@ -378,8 +378,16 @@ void TooltipManager::showPopup() {
 
   m_surface->setInputRegion({});
   m_surface->setAnimationManager(&m_animations);
-  m_surface->setConfigureCallback([this](std::uint32_t, std::uint32_t) { m_surface->requestLayout(); });
-  m_surface->setPrepareFrameCallback([this](bool u, bool l) { prepareFrame(u, l); });
+  m_surface->setConfigureCallback([this](std::uint32_t, std::uint32_t) {
+    if (m_surface != nullptr) {
+      m_surface->requestLayout();
+    }
+  });
+  m_surface->setPrepareFrameCallback([this](bool u, bool l) {
+    if (m_surface != nullptr) {
+      prepareFrame(u, l);
+    }
+  });
 
   m_paletteConn = paletteChanged().connect([this] {
     if (m_surface != nullptr) {
