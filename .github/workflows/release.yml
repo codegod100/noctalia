@@ -72,11 +72,23 @@ jobs:
           cp "$BINARY" dist/noctalia/noctalia
           chmod +x dist/noctalia/noctalia
           patchelf --set-rpath '$ORIGIN/lib' dist/noctalia/noctalia
-
           # --remove-destination avoids failures when copying into a directory
           # that already contains read-only library files.
+          # glibc and the dynamic linker must come from the host system; bundling
+          # a newer Nix glibc than the host loader supports causes ABI errors.
+          EXCLUDE_LIBS="ld-linux-x86-64.so.2 libc.so.6 libm.so.6 libpthread.so.0 libdl.so.2 libresolv.so.2 librt.so.1 libutil.so.1 libnsl.so.1 libcrypt.so.1"
           while IFS= read -r lib; do
-            cp -L --remove-destination "$lib" dist/noctalia/lib/
+            name=$(basename "$lib")
+            skip=false
+            for ex in $EXCLUDE_LIBS; do
+              if [ "$name" = "$ex" ]; then
+                skip=true
+                break
+              fi
+            done
+            if [ "$skip" = false ]; then
+              cp -L --remove-destination "$lib" dist/noctalia/lib/
+            fi
           done < /tmp/seen_libs.txt
 
           dist/noctalia/noctalia --version
