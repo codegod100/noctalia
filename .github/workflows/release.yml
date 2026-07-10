@@ -72,6 +72,7 @@ jobs:
           cp "$BINARY" dist/noctalia/noctalia
           chmod +x dist/noctalia/noctalia
           patchelf --set-rpath '$ORIGIN/lib' dist/noctalia/noctalia
+
           # --remove-destination avoids failures when copying into a directory
           # that already contains read-only library files.
           # glibc and the dynamic linker must come from the host system; bundling
@@ -92,7 +93,10 @@ jobs:
           done < /tmp/seen_libs.txt
 
           dist/noctalia/noctalia --version
-          tar -czf dist/noctalia-x86_64-linux.tar.gz -C dist noctalia
+
+          # Include runtime assets so the extracted binary works without installation.
+          cp -r assets dist/assets
+          tar -czf dist/noctalia-x86_64-linux.tar.gz -C dist noctalia assets
 
           # Source tarball (without Nix/buck2 internals).
           mkdir -p ../noctalia-release
