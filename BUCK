@@ -11,7 +11,7 @@ genrule(
     name = "git_revision_header",
     srcs = [":git_revision_h_in"],
     out = "noctalia_git_revision.h",
-    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta2-6-g7f15b6cecb36-dirty/g\" $(location :git_revision_h_in) > $OUT",
+    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta3-dirty/g\" $(location :git_revision_h_in) > $OUT",
 )
 
 # Vendored libraries defined at the repo root so include_directories resolve to
@@ -28,9 +28,9 @@ cxx_library(
     raw_headers = glob(["third_party/dr_wav/*.h"]),
     include_directories = ["third_party/dr_wav"],
     public_include_directories = ["third_party/dr_wav"],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 
 cxx_library(
@@ -43,9 +43,9 @@ cxx_library(
         "-Wno-pedantic",
         "-Wno-conversion",
     ],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 
 cxx_library(
@@ -88,6 +88,7 @@ cxx_library(
         "-Wno-shadow",
         "-Wno-unused-parameter",
     ],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
     within_view = ["PUBLIC"],
@@ -173,9 +174,9 @@ cxx_library(
         "third_party/luau/VM/src",
     ],
     compiler_flags = ["-w"],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 
 

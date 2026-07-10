@@ -69,9 +69,9 @@ cxx_library(
     raw_headers = glob(["third_party/dr_wav/*.h"]),
     include_directories = ["third_party/dr_wav"],
     public_include_directories = ["third_party/dr_wav"],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 
 cxx_library(
@@ -84,9 +84,9 @@ cxx_library(
         "-Wno-pedantic",
         "-Wno-conversion",
     ],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 
 cxx_library(
@@ -129,6 +129,7 @@ cxx_library(
         "-Wno-shadow",
         "-Wno-unused-parameter",
     ],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
     within_view = ["PUBLIC"],
@@ -214,9 +215,9 @@ cxx_library(
         "third_party/luau/VM/src",
     ],
     compiler_flags = ["-w"],
+    preferred_linkage = "static",
     link_whole = True,
     visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
 )
 """
 
