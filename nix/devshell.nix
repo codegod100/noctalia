@@ -13,6 +13,7 @@ pkgs.mkShell {
     # Build tools invoked directly by just recipes
     meson
     ninja
+    buck2
     pkg-config
     wayland-scanner
 
