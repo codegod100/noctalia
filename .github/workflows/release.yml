@@ -19,8 +19,71 @@ jobs:
         with:
           fetch-depth: 0 # needed so git describe/git log can see full history and tags
 
-      - name: Create release archive
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v4
+
+      - name: Configure BuildBuddy credentials
+        env:
+          BUILDBUDDY_API_KEY: ${{ secrets.BUILDBUDDY_API_KEY }}
         run: |
+          if [ -z "$BUILDBUDDY_API_KEY" ]; then
+            echo "BUILDBUDDY_API_KEY secret is not set; falling back to committed .buckconfig"
+          else
+            cat > .buckconfig <<EOF
+[cells]
+  root = .
+  prelude = prelude
+  toolchains = toolchains
+  none = none
+
+[cell_aliases]
+  config = prelude
+  ovr_config = prelude
+  fbcode = none
+  fbsource = none
+  fbcode_macros = none
+  buck = none
+
+[external_cells]
+  prelude = bundled
+
+[parser]
+  target_platform_detector_spec = target:root//...->prelude//platforms:default \\
+    target:prelude//...->prelude//platforms:default \\
+    target:toolchains//...->prelude//platforms:default
+
+[build]
+  execution_platforms = //platforms:buildbuddy
+
+[buck2_re_client]
+  engine_address = remote.buildbuddy.io
+  action_cache_address = remote.buildbuddy.io
+  cas_address = remote.buildbuddy.io
+  http_headers = x-buildbuddy-api-key:${BUILDBUDDY_API_KEY}
+
+[buck2]
+  remote_execution = true
+EOF
+          fi
+
+      - name: Build noctalia on BuildBuddy RBE
+        run: |
+          nix develop --command buck2 build //:noctalia
+
+      - name: Stage release artifacts
+        run: |
+          mkdir -p dist
+          # Find the built executable in buck-out.
+          BINARY=$(find buck-out -name noctalia -type f -executable -print -quit)
+          if [ -z "$BINARY" ]; then
+            echo "Could not find built noctalia binary" >&2
+            exit 1
+          fi
+          cp "$BINARY" dist/noctalia-x86_64-linux
+          chmod +x dist/noctalia-x86_64-linux
+          dist/noctalia-x86_64-linux --version
+
+          # Source tarball (without Nix/buck2 internals).
           mkdir -p ../noctalia-release
           rsync -av \
             --exclude='.git' \
@@ -29,16 +92,16 @@ jobs:
             --exclude='flake.nix' \
             --exclude='flake.lock' \
             --exclude='result*' \
+            --exclude='buck-out' \
             ./ ../noctalia-release/
           cd ..
           tar -czf noctalia-${{ github.ref_name }}.tar.gz noctalia-release/
           cp noctalia-${{ github.ref_name }}.tar.gz noctalia-latest.tar.gz
-          mv *.tar.gz ${{ github.workspace }}/
+          mv *.tar.gz ${{ github.workspace }}/dist/
 
       - name: Generate release notes
         run: |
           set -euo pipefail
-          # Find previous tag. Prefer the one before the current tag on the same history; fallback to the next most recent tag.
           PREV_TAG=$(git describe --tags --abbrev=0 "${GITHUB_REF}^" 2>/dev/null || true)
           if [ -z "${PREV_TAG:-}" ]; then
             PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${GITHUB_REF_NAME}$" | head -n1 || true)
@@ -61,8 +124,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            noctalia-${{ github.ref_name }}.tar.gz
-            noctalia-latest.tar.gz
+            dist/noctalia-x86_64-linux
+            dist/noctalia-${{ github.ref_name }}.tar.gz
+            dist/noctalia-latest.tar.gz
           body_path: release_notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
