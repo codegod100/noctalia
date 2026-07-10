@@ -1,10 +1,12 @@
 #include "wayland/toplevel_surface.h"
 
+#include "app/main_loop.h"
 #include "core/log.h"
 #include "wayland/wayland_connection.h"
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <chrono>
 #include <utility>
 
 namespace {
@@ -21,6 +23,19 @@ namespace {
       .configure_bounds = &ToplevelSurface::handleToplevelConfigureBounds,
       .wm_capabilities = &ToplevelSurface::handleToplevelWmCapabilities,
   };
+
+  int timedRoundtrip(WaylandConnection& connection, std::string_view operation) {
+    if (noctalia::main_loop::isWaylandDispatchActive()) {
+      kLog.warn("blocking Wayland roundtrip during event dispatch: {}", operation);
+    }
+    const auto start = std::chrono::steady_clock::now();
+    const int ret = wl_display_roundtrip(connection.display());
+    const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    if (ms >= 50.0) {
+      kLog.warn("{} roundtrip took {:.1f}ms", operation, ms);
+    }
+    return ret;
+  }
 
 } // namespace
 
@@ -80,7 +95,7 @@ bool ToplevelSurface::initialize(wl_output* output, ToplevelSurfaceConfig config
 
   wl_surface_commit(m_surface);
   wl_display_flush(m_connection.display());
-  if (wl_display_roundtrip(m_connection.display()) < 0) {
+  if (timedRoundtrip(m_connection, "toplevel initial") < 0) {
     kLog.warn("toplevel: initial roundtrip failed");
     destroyRoleObjects();
     destroySurface();

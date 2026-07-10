@@ -1,5 +1,6 @@
 #include "ui/controls/select_dropdown_popup.h"
 
+#include "app/main_loop.h"
 #include "core/deferred_call.h"
 #include "core/input/key_symbols.h"
 #include "core/input/keybind_matcher.h"
@@ -25,6 +26,7 @@
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <linux/input-event-codes.h>
 #include <utility>
@@ -36,6 +38,19 @@ namespace {
   constexpr float kMenuPadding = Style::spaceXs;
 
   Color resolved(ColorRole role, float alpha = 1.0f) { return colorForRole(role, alpha); }
+
+  int timedRoundtrip(WaylandConnection& connection, std::string_view operation) {
+    if (noctalia::main_loop::isWaylandDispatchActive()) {
+      kLog.warn("blocking Wayland roundtrip during event dispatch: {}", operation);
+    }
+    const auto start = std::chrono::steady_clock::now();
+    const int ret = wl_display_roundtrip(connection.display());
+    const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    if (ms >= 50.0) {
+      kLog.warn("{} roundtrip took {:.1f}ms", operation, ms);
+    }
+    return ret;
+  }
 
 } // namespace
 
@@ -375,7 +390,7 @@ void SelectDropdownPopup::selectAndClose(std::size_t index) {
     // the dropdown destroy is processed before any follow-up dialog opens on the parent chain.
     if (hadSurface) {
       wl_display_flush(m_wayland.display());
-      if (wl_display_roundtrip(m_wayland.display()) < 0) {
+      if (timedRoundtrip(m_wayland, "select dropdown post-close") < 0) {
         kLog.warn("select dropdown: post-close roundtrip failed (compositor protocol error)");
       }
     }

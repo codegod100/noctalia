@@ -8,6 +8,7 @@ public:
   explicit LockKeysPollSource(LockKeysService& service) : m_service(service) {}
 
   [[nodiscard]] int pollTimeoutMs() const override { return m_service.pollTimeoutMs(); }
+  [[nodiscard]] bool isBackgroundSource() const override { return true; }
   void dispatch(const std::vector<pollfd>& /*fds*/, std::size_t /*startIdx*/) override { m_service.dispatchPoll(); }
 
 protected:

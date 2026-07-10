@@ -18,6 +18,10 @@ public:
   // The loop treats it as an absolute deadline from when it is first advertised.
   [[nodiscard]] virtual int pollTimeoutMs() const { return -1; }
 
+  // True for sources whose timeout=0 is not user-input-driven and can tolerate
+  // a small poll floor when no input source needs immediate dispatch.
+  [[nodiscard]] virtual bool isBackgroundSource() const { return false; }
+
   // Called after poll() returns. startIdx is what addPollFds returned.
   virtual void dispatch(const std::vector<pollfd>& fds, std::size_t startIdx) = 0;
 

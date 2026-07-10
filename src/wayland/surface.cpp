@@ -12,7 +12,7 @@
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
-#include <cmath>
+#include <chrono>
 #include <cstdlib>
 #include <format>
 #include <limits>
@@ -28,6 +28,40 @@ namespace {
   constexpr Logger kLog("surface");
   constexpr float kSlowSurfaceOperationDebugMs = 50.0f;
   constexpr float kSlowSurfaceOperationWarnMs = 1000.0f;
+
+  constexpr auto kConfigureStormWindow = std::chrono::milliseconds(250);
+  constexpr int kConfigureStormThreshold = 5;
+
+  struct ConfigureStormState {
+    std::chrono::steady_clock::time_point firstAt;
+    std::chrono::steady_clock::time_point lastAt;
+    int count = 0;
+  };
+
+  ConfigureStormState& configureStormState(const Surface* surface) {
+    static std::unordered_map<const Surface*, ConfigureStormState> s_states;
+    return s_states[surface];
+  }
+
+  void recordConfigureForStormDetection(const Surface* surface, std::uint32_t width, std::uint32_t height) {
+    auto& state = configureStormState(surface);
+    const auto now = std::chrono::steady_clock::now();
+    if (state.count == 0 || now - state.firstAt > kConfigureStormWindow) {
+      state.firstAt = now;
+      state.count = 1;
+    } else {
+      ++state.count;
+    }
+    state.lastAt = now;
+    if (state.count >= kConfigureStormThreshold) {
+      kLog.warn(
+          "configure storm detected ({} configures in {:.0f}ms) on surface={} size={}x{}", state.count,
+          std::chrono::duration<double, std::milli>(now - state.firstAt).count(), static_cast<const void*>(surface),
+          width, height
+      );
+      state.count = 0;
+    }
+  }
 
   const wl_callback_listener kFrameListener = {
       .done = &Surface::handleFrameDone,
@@ -420,6 +454,7 @@ void Surface::onConfigure(std::uint32_t width, std::uint32_t height) {
   m_height = height;
   m_configured = true;
   traceSurfaceEvent(*this, "configure");
+  recordConfigureForStormDetection(this, m_width, m_height);
 
   const float resizeMs = elapsedMs([this] {
     applySurfaceScaleState();

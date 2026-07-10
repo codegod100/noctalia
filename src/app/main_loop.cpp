@@ -29,6 +29,22 @@
 #include <wayland-client-core.h>
 
 namespace {
+  // Tracks nested wl_display_dispatch_pending calls. Some handlers call
+  // wl_display_roundtrip, which recursively dispatches; this lets us warn
+  // about the blocking call sites that stall the outer dispatch timer.
+  thread_local int g_waylandDispatchDepth = 0;
+
+  struct WaylandDispatchScope {
+    explicit WaylandDispatchScope() { ++g_waylandDispatchDepth; }
+    ~WaylandDispatchScope() { --g_waylandDispatchDepth; }
+  };
+} // namespace
+
+namespace noctalia::main_loop {
+  bool isWaylandDispatchActive() { return g_waylandDispatchDepth > 0; }
+} // namespace noctalia::main_loop
+
+namespace {
   constexpr Logger kLog("main");
   constexpr float kSlowMainLoopOperationDebugMs = 50.0f;
   constexpr float kSlowMainLoopOperationWarnMs = 1000.0f;
@@ -270,6 +286,7 @@ namespace {
   // re-dispatched on the next iteration. Returns the wl_display_dispatch_pending result unchanged
   // (negative = genuine protocol error, still surfaced by the caller); a caught exception yields 0.
   int dispatchPendingGuarded(wl_display* display) {
+    WaylandDispatchScope scope;
     try {
       return wl_display_dispatch_pending(display);
     } catch (const std::exception& e) {
@@ -394,6 +411,7 @@ void MainLoop::run() {
 
     const auto nowBeforePoll = std::chrono::steady_clock::now();
     bool sourceWantsImmediate = false;
+    bool foregroundSourceWantsImmediate = false;
     for (auto* source : sources) {
       const std::size_t startIdx = source->addPollFds(pollFds);
       sourceStartIndices.push_back(startIdx);
@@ -429,6 +447,9 @@ void MainLoop::run() {
           remaining < 0 ? 0 : static_cast<int>(std::min<std::int64_t>(remaining, std::numeric_limits<int>::max()));
       if (remainingMs == 0) {
         sourceWantsImmediate = true;
+        if (!source->isBackgroundSource()) {
+          foregroundSourceWantsImmediate = true;
+        }
       }
       if (pollTimeout < 0 || remainingMs < pollTimeout) {
         pollTimeout = remainingMs;
@@ -439,7 +460,9 @@ void MainLoop::run() {
       // needs immediate dispatch. Without this floor, a widget that continuously
       // requests frame ticks or redraws forces timeout=0, starving Wayland
       // dispatch and causing multi-second wl_display_dispatch_pending stalls.
-      if (!sourceWantsImmediate) {
+      // Background sources (system D-Bus, lock-keys poller) voting timeout=0
+      // do not count as explicit immediate dispatch.
+      if (!foregroundSourceWantsImmediate) {
         pollTimeout = std::max(pollTimeout, 16);
       }
     }

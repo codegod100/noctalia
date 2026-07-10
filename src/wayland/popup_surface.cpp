@@ -1,5 +1,6 @@
 #include "wayland/popup_surface.h"
 
+#include "app/main_loop.h"
 #include "core/log.h"
 #include "wayland/hyprland/focus_grab_service.h"
 #include "wayland/hyprland/popup_grab_host.h"
@@ -8,6 +9,7 @@
 #include "xdg-shell-client-protocol.h"
 
 #include <algorithm>
+#include <chrono>
 #include <utility>
 
 namespace {
@@ -43,6 +45,19 @@ namespace {
     xdg_positioner_set_constraint_adjustment(positioner, config.constraintAdjustment);
     xdg_positioner_set_offset(positioner, config.offsetX, config.offsetY);
     return positioner;
+  }
+
+  int timedRoundtrip(WaylandConnection& connection, std::string_view operation) {
+    if (noctalia::main_loop::isWaylandDispatchActive()) {
+      kLog.warn("blocking Wayland roundtrip during event dispatch: {}", operation);
+    }
+    const auto start = std::chrono::steady_clock::now();
+    const int ret = wl_display_roundtrip(connection.display());
+    const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    if (ms >= 50.0) {
+      kLog.warn("{} roundtrip took {:.1f}ms", operation, ms);
+    }
+    return ret;
   }
 
 } // namespace
@@ -143,7 +158,7 @@ bool PopupSurface::initialize(zwlr_layer_surface_v1* parentLayerSurface, wl_outp
   // Flush before the roundtrip to ensure any pending destroy messages from a previous
   // popup are delivered to the compositor before we ask it to configure the new one.
   wl_display_flush(m_connection.display());
-  if (wl_display_roundtrip(m_connection.display()) < 0) {
+  if (timedRoundtrip(m_connection, "popup initial") < 0) {
     kLog.warn("popup: initial roundtrip failed (compositor protocol error)");
     unenrollFromGrabHost();
     destroyRoleObjects();
@@ -318,7 +333,7 @@ bool PopupSurface::initializeAsChild(xdg_surface* parentXdgSurface, wl_output* o
 
   wl_surface_commit(m_surface);
   wl_display_flush(m_connection.display());
-  if (wl_display_roundtrip(m_connection.display()) < 0) {
+  if (timedRoundtrip(m_connection, "submenu popup initial") < 0) {
     kLog.warn("submenu popup: initial roundtrip failed (compositor protocol error)");
     unenrollFromGrabHost();
     destroyRoleObjects();

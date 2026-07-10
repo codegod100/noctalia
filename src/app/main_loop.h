@@ -26,3 +26,9 @@ private:
   // the timeout it advertised and retained across iterations until it fires.
   std::unordered_map<PollSource*, std::chrono::steady_clock::time_point> m_sourceDeadlines;
 };
+
+namespace noctalia::main_loop {
+  // True while the main loop is inside wl_display_dispatch_pending. Useful
+  // for detecting blocking roundtrips that would stall event dispatch.
+  [[nodiscard]] bool isWaylandDispatchActive();
+} // namespace noctalia::main_loop

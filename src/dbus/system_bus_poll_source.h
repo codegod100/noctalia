@@ -15,6 +15,8 @@ public:
     return t;
   }
 
+  [[nodiscard]] bool isBackgroundSource() const override { return true; }
+
   void dispatch(const std::vector<pollfd>& /*fds*/, std::size_t /*startIdx*/) override { m_bus.processPendingEvents(); }
 
 protected:
