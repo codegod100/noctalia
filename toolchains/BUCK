@@ -1,0 +1,86 @@
+load("@prelude//toolchains:cxx.bzl", "system_cxx_toolchain")
+load("@prelude//toolchains:genrule.bzl", "system_genrule_toolchain")
+load("@prelude//toolchains:python.bzl", "system_python_bootstrap_toolchain")
+load("@prelude//tests:test_toolchain.bzl", "noop_test_toolchain")
+
+# Minimal toolchain cell for Noctalia. We define only the toolchains we need
+# so that the default C++ toolchain name is `toolchains//:cxx`.
+
+# Debug-like toolchain matching the meson development build. Uses g++/gcc so
+# that the same libstdc++ and include paths as the meson build are used.
+system_cxx_toolchain(
+    name = "cxx",
+    visibility = ["PUBLIC"],
+    compiler = "gcc",
+    compiler_type = "gcc",
+    cxx_compiler = "g++",
+    linker = "g++",
+    archiver = "ar",
+    c_flags = [
+        "-std=c23",
+    ],
+    cxx_flags = [
+        "-std=c++23",
+        "-Wall",
+        "-Wextra",
+        "-Wno-missing-field-initializers",
+        "-Wpedantic",
+        "-Wconversion",
+        "-Wshadow",
+        "-D_GLIBCXX_ASSERTIONS",
+    ],
+    link_flags = [],
+    post_link_flags = [
+        "-Wl,--gc-sections",
+        "-Wl,--as-needed",
+    ],
+    link_style = "shared",
+)
+
+system_cxx_toolchain(
+    name = "cxx-release",
+    visibility = ["PUBLIC"],
+    compiler = "gcc",
+    compiler_type = "gcc",
+    cxx_compiler = "g++",
+    linker = "g++",
+    archiver = "ar",
+    c_flags = [
+        "-std=c23",
+    ],
+    cxx_flags = [
+        "-std=c++23",
+        "-Wall",
+        "-Wextra",
+        "-Wno-missing-field-initializers",
+        "-Wpedantic",
+        "-Wconversion",
+        "-Wshadow",
+        "-march=native",
+        "-mtune=native",
+        "-fomit-frame-pointer",
+        "-ffunction-sections",
+        "-fdata-sections",
+    ],
+    link_flags = [],
+    post_link_flags = [
+        "-Wl,--gc-sections",
+        "-Wl,--as-needed",
+    ],
+    link_style = "shared",
+)
+
+system_python_bootstrap_toolchain(
+    name = "python_bootstrap",
+    visibility = ["PUBLIC"],
+)
+
+system_genrule_toolchain(
+    name = "genrule",
+    visibility = ["PUBLIC"],
+)
+
+noop_test_toolchain(
+    name = "test",
+    visibility = ["PUBLIC"],
+)

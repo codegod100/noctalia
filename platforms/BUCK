@@ -1,0 +1,6 @@
+load(":defs.bzl", "platforms")
+
+# BuildBuddy remote execution platform.
+# To enable, set execution_platforms in .buckconfig to this target
+# and uncomment the [buck2] remote_execution setting.
+platforms(name = "buildbuddy")

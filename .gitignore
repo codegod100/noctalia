@@ -1,5 +1,9 @@
+# buck2
+buck-out/
+.buckd/
 # Build
 build*/
+!build_defs/
 cmake-build-*/
 compile_commands.json
 

@@ -1,0 +1,12 @@
+cxx_library(
+    name = "fzy",
+    srcs = ["src/match.c"],
+    include_directories = ["src"],
+    public_include_directories = ["src"],
+    compiler_flags = [
+        "-Wno-pedantic",
+        "-Wno-conversion",
+    ],
+    visibility = ["PUBLIC"],
+    within_view = ["PUBLIC"],
+)
