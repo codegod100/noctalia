@@ -11,16 +11,13 @@ def _platforms(ctx):
         constraints = {},
         values = {},
     )
-    image = "docker://ttl.sh/noctalia-rbe-b7fe29b22de1:24h"
+    image = "docker://ttl.sh/noctalia-rbe-cc0453ad096a:24h"
     platform = ExecutionPlatformInfo(
         label = ctx.label.raw_target(),
         configuration = configuration,
         executor_config = CommandExecutorConfig(
-            local_enabled = True,
+            local_enabled = False,
             remote_enabled = True,
-            use_limited_hybrid = True,
-            allow_limited_hybrid_fallbacks = True,
-            allow_hybrid_fallbacks_on_failure = True,
             remote_execution_properties = {
                 "OSFamily": "Linux",
                 "container-image": image,

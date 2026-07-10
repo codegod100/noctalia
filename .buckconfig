@@ -21,7 +21,7 @@
     target:toolchains//...->prelude//platforms:default
 
 [build]
-  execution_platforms = prelude//platforms:default
+  execution_platforms = //platforms:buildbuddy
 
 [buck2_re_client]
   engine_address = remote.buildbuddy.io
@@ -29,6 +29,5 @@
   cas_address = remote.buildbuddy.io
   http_headers = x-buildbuddy-api-key: OcaY2bnDdvrm7p8R2VM1
 
-# Uncomment to enable remote execution after fixing sub-package include paths:
-#[buck2]
-#  remote_execution = true
+[buck2]
+  remote_execution = true

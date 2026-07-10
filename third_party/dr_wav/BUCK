@@ -1,9 +1,0 @@
-cxx_library(
-    name = "dr_wav",
-    srcs = ["dr_wav.c"],
-    include_directories = ["."],
-    public_include_directories = ["."],
-    link_whole = True,
-    visibility = ["PUBLIC"],
-    within_view = ["PUBLIC"],
-)

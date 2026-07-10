@@ -53,6 +53,174 @@ def define(name: str, value: str) -> str:
     return f'        "-D{name}=\\"{value}\\""'
 
 
+def vendored_libs() -> str:
+    return """
+# Vendored libraries defined at the repo root so include_directories resolve to
+# repo-relative paths. This is required for Remote Build Execution: when the
+# library is defined inside a sub-package, buck2 resolves include_directories
+# relative to the package for local builds but the remote worker receives an
+# unusable path. Defining them at the root keeps the include path identical on
+# both local and remote workers. raw_headers ensures all headers are uploaded as
+# action inputs for RBE.
+
+cxx_library(
+    name = "dr_wav",
+    srcs = ["third_party/dr_wav/dr_wav.c"],
+    raw_headers = glob(["third_party/dr_wav/*.h"]),
+    include_directories = ["third_party/dr_wav"],
+    public_include_directories = ["third_party/dr_wav"],
+    link_whole = True,
+    visibility = ["PUBLIC"],
+    within_view = ["PUBLIC"],
+)
+
+cxx_library(
+    name = "fzy",
+    srcs = ["third_party/fzy/src/match.c"],
+    raw_headers = glob(["third_party/fzy/src/*.h", "third_party/fzy/*.h"]),
+    include_directories = ["third_party/fzy/src"],
+    public_include_directories = ["third_party/fzy/src"],
+    compiler_flags = [
+        "-Wno-pedantic",
+        "-Wno-conversion",
+    ],
+    link_whole = True,
+    visibility = ["PUBLIC"],
+    within_view = ["PUBLIC"],
+)
+
+cxx_library(
+    name = "material_color_utilities",
+    srcs = [
+        "third_party/material_color_utilities/cpp/blend/blend.cc",
+        "third_party/material_color_utilities/cpp/cam/cam.cc",
+        "third_party/material_color_utilities/cpp/cam/hct.cc",
+        "third_party/material_color_utilities/cpp/cam/hct_solver.cc",
+        "third_party/material_color_utilities/cpp/cam/viewing_conditions.cc",
+        "third_party/material_color_utilities/cpp/contrast/contrast.cc",
+        "third_party/material_color_utilities/cpp/dislike/dislike.cc",
+        "third_party/material_color_utilities/cpp/dynamiccolor/dynamic_color.cc",
+        "third_party/material_color_utilities/cpp/dynamiccolor/dynamic_scheme.cc",
+        "third_party/material_color_utilities/cpp/dynamiccolor/material_dynamic_colors.cc",
+        "third_party/material_color_utilities/cpp/palettes/tones.cc",
+        "third_party/material_color_utilities/cpp/quantize/celebi.cc",
+        "third_party/material_color_utilities/cpp/quantize/lab.cc",
+        "third_party/material_color_utilities/cpp/quantize/wsmeans.cc",
+        "third_party/material_color_utilities/cpp/quantize/wu.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_content.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_expressive.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_fidelity.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_fruit_salad.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_monochrome.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_neutral.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_rainbow.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_tonal_spot.cc",
+        "third_party/material_color_utilities/cpp/scheme/scheme_vibrant.cc",
+        "third_party/material_color_utilities/cpp/score/score.cc",
+        "third_party/material_color_utilities/cpp/temperature/temperature_cache.cc",
+        "third_party/material_color_utilities/cpp/utils/utils.cc",
+    ],
+    raw_headers = glob(["third_party/material_color_utilities/cpp/**/*.h"]),
+    include_directories = ["third_party/material_color_utilities"],
+    public_include_directories = ["third_party/material_color_utilities"],
+    compiler_flags = [
+        "-Wno-pedantic",
+        "-Wno-conversion",
+        "-Wno-shadow",
+        "-Wno-unused-parameter",
+    ],
+    link_whole = True,
+    visibility = ["PUBLIC"],
+    within_view = ["PUBLIC"],
+)
+
+cxx_library(
+    name = "luau",
+    srcs = [
+        "third_party/luau/Common/src/BytecodeWire.cpp",
+        "third_party/luau/Common/src/StringUtils.cpp",
+        "third_party/luau/Common/src/TimeTrace.cpp",
+        "third_party/luau/Ast/src/Allocator.cpp",
+        "third_party/luau/Ast/src/Ast.cpp",
+        "third_party/luau/Ast/src/Confusables.cpp",
+        "third_party/luau/Ast/src/Cst.cpp",
+        "third_party/luau/Ast/src/Lexer.cpp",
+        "third_party/luau/Ast/src/Location.cpp",
+        "third_party/luau/Ast/src/Parser.cpp",
+        "third_party/luau/Ast/src/PrettyPrinter.cpp",
+        "third_party/luau/Bytecode/src/BytecodeBuilder.cpp",
+        "third_party/luau/Bytecode/src/BytecodeGraph.cpp",
+        "third_party/luau/Compiler/src/BuiltinFolding.cpp",
+        "third_party/luau/Compiler/src/Builtins.cpp",
+        "third_party/luau/Compiler/src/Compiler.cpp",
+        "third_party/luau/Compiler/src/ConstantFolding.cpp",
+        "third_party/luau/Compiler/src/CostModel.cpp",
+        "third_party/luau/Compiler/src/lcode.cpp",
+        "third_party/luau/Compiler/src/TableShape.cpp",
+        "third_party/luau/Compiler/src/Types.cpp",
+        "third_party/luau/Compiler/src/ValueTracking.cpp",
+        "third_party/luau/VM/src/lapi.cpp",
+        "third_party/luau/VM/src/laux.cpp",
+        "third_party/luau/VM/src/lbaselib.cpp",
+        "third_party/luau/VM/src/lbitlib.cpp",
+        "third_party/luau/VM/src/lbuffer.cpp",
+        "third_party/luau/VM/src/lbuflib.cpp",
+        "third_party/luau/VM/src/lbuiltins.cpp",
+        "third_party/luau/VM/src/lcorolib.cpp",
+        "third_party/luau/VM/src/ldblib.cpp",
+        "third_party/luau/VM/src/ldebug.cpp",
+        "third_party/luau/VM/src/ldo.cpp",
+        "third_party/luau/VM/src/lfunc.cpp",
+        "third_party/luau/VM/src/lgc.cpp",
+        "third_party/luau/VM/src/lgcdebug.cpp",
+        "third_party/luau/VM/src/linit.cpp",
+        "third_party/luau/VM/src/lintlib.cpp",
+        "third_party/luau/VM/src/lclass.cpp",
+        "third_party/luau/VM/src/lclasslib.cpp",
+        "third_party/luau/VM/src/lmathlib.cpp",
+        "third_party/luau/VM/src/lmem.cpp",
+        "third_party/luau/VM/src/lnumprint.cpp",
+        "third_party/luau/VM/src/lobject.cpp",
+        "third_party/luau/VM/src/loslib.cpp",
+        "third_party/luau/VM/src/lperf.cpp",
+        "third_party/luau/VM/src/lstate.cpp",
+        "third_party/luau/VM/src/lstring.cpp",
+        "third_party/luau/VM/src/lstrlib.cpp",
+        "third_party/luau/VM/src/ltable.cpp",
+        "third_party/luau/VM/src/ltablib.cpp",
+        "third_party/luau/VM/src/ltm.cpp",
+        "third_party/luau/VM/src/ludata.cpp",
+        "third_party/luau/VM/src/lutf8lib.cpp",
+        "third_party/luau/VM/src/lveclib.cpp",
+        "third_party/luau/VM/src/lvmexecute.cpp",
+        "third_party/luau/VM/src/lvmload.cpp",
+        "third_party/luau/VM/src/lvmutils.cpp",
+    ],
+    raw_headers = glob(["third_party/luau/**/*.h"]),
+    include_directories = [
+        "third_party/luau/Common/include",
+        "third_party/luau/Ast/include",
+        "third_party/luau/Bytecode/include",
+        "third_party/luau/Compiler/include",
+        "third_party/luau/VM/include",
+        "third_party/luau/VM/src",
+    ],
+    public_include_directories = [
+        "third_party/luau/Common/include",
+        "third_party/luau/Ast/include",
+        "third_party/luau/Bytecode/include",
+        "third_party/luau/Compiler/include",
+        "third_party/luau/VM/include",
+        "third_party/luau/VM/src",
+    ],
+    compiler_flags = ["-w"],
+    link_whole = True,
+    visibility = ["PUBLIC"],
+    within_view = ["PUBLIC"],
+)
+"""
+
+
 def generate() -> str:
     sources = extract_sources(Path("meson.build"))
     revision = git_revision()
@@ -74,6 +242,7 @@ def generate() -> str:
         '    out = "noctalia_git_revision.h",',
         f'    cmd = "sed -e \\"s/@VCS_TAG@/{revision}/g\\" $(location :git_revision_h_in) > $OUT",',
         ")",
+        vendored_libs(),
         "",
         "cxx_binary(",
         '    name = "noctalia",',
@@ -84,6 +253,7 @@ def generate() -> str:
     lines += [
         "    ],",
         '    headers = [":git_revision_header"],',
+        '    raw_headers = glob(["src/**/*.h", "third_party/wuffs/**/*"]),',
         "    include_directories = [",
         '        "src",',
         '        "third_party/wuffs",',
@@ -102,10 +272,10 @@ def generate() -> str:
         f"        {linker_flags},",
         "    ],",
         "    deps = [",
-        '        "//third_party/dr_wav:dr_wav",',
-        '        "//third_party/fzy:fzy",',
-        '        "//third_party/luau:luau",',
-        '        "//third_party/material_color_utilities:material_color_utilities",',
+        '        ":dr_wav",',
+        '        ":fzy",',
+        '        ":luau",',
+        '        ":material_color_utilities",',
         '        "//third_party/system:sdbus_cpp",',
         '        "//third_party/system:wayland_client",',
         '        "//third_party/system:wayland_egl",',
