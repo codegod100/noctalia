@@ -1,0 +1,6 @@
+.git
+buck-out
+.direnv
+result
+result-*
+build*/

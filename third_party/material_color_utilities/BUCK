@@ -32,6 +32,7 @@ cxx_library(
     include_directories = ["."],
     public_include_directories = ["."],
     compiler_flags = [
+        "-Ithird_party/material_color_utilities",
         "-Wno-pedantic",
         "-Wno-conversion",
         "-Wno-shadow",

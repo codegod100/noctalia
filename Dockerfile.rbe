@@ -1,0 +1,32 @@
+# RBE worker image for Noctalia.
+# Builds a Nix-based self-contained environment with all compile-time
+# dependencies and symlinks tools to /usr/local/bin.
+#
+# Build & push:
+#   docker build -f Dockerfile.rbe -t noctalia-rbe .
+#   docker tag noctalia-rbe ghcr.io/codegod100/noctalia-rbe:latest
+#   docker push ghcr.io/codegod100/noctalia-rbe:latest
+
+FROM nixos/nix:latest
+
+# Copy everything needed to evaluate the flake.
+COPY . /src
+WORKDIR /src
+
+# `nix develop` needs a git repo; create a minimal one so the flake
+# evaluates cleanly.
+RUN git init && git add -A
+
+# Enable flakes.
+RUN echo "experimental-features = nix-command flakes" >> /etc/nix/nix.conf
+
+# Pre-fetch the entire devshell closure (~2 GB), cached permanently.
+RUN nix develop --command true
+
+# Symlink devshell tools to /usr/local/bin so buck2 remote actions
+# find g++, wayland-scanner, pkg-config, etc. on the default PATH.
+RUN nix develop --command bash /src/tools/docker-symlinks.sh
+
+ENV PATH=/usr/local/bin:$PATH
+
+RUN echo "noctalia-rbe $(date -u +%Y-%m-%d)" > /etc/rbe-image-id

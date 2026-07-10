@@ -4,9 +4,11 @@ cxx_library(
     include_directories = ["src"],
     public_include_directories = ["src"],
     compiler_flags = [
+        "-Ithird_party/fzy/src",
         "-Wno-pedantic",
         "-Wno-conversion",
     ],
+    link_whole = True,
     visibility = ["PUBLIC"],
     within_view = ["PUBLIC"],
 )

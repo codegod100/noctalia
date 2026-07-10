@@ -12,8 +12,6 @@
   fbcode_macros = none
   buck = none
 
-# Uses a copy of the prelude bundled with the buck2 binary. You can alternatively delete this
-# section and vendor a copy of the prelude to the `prelude` directory of your project.
 [external_cells]
   prelude = bundled
 
@@ -26,12 +24,11 @@
   execution_platforms = prelude//platforms:default
 
 [buck2_re_client]
-  engine_address = grpcs://remote.buildbuddy.io
-  action_cache_address = grpcs://remote.buildbuddy.io
-  cas_address = grpcs://remote.buildbuddy.io
-  # Uncomment and set your API key:
-  # http_headers = x-buildbuddy-api-key=YOUR_API_KEY
+  engine_address = remote.buildbuddy.io
+  action_cache_address = remote.buildbuddy.io
+  cas_address = remote.buildbuddy.io
+  http_headers = x-buildbuddy-api-key: OcaY2bnDdvrm7p8R2VM1
 
-[buck2]
-  # Uncomment to enable remote execution:
-  # remote_execution = true
+# Uncomment to enable remote execution after fixing sub-package include paths:
+#[buck2]
+#  remote_execution = true

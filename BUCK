@@ -11,7 +11,7 @@ genrule(
     name = "git_revision_header",
     srcs = [":git_revision_h_in"],
     out = "noctalia_git_revision.h",
-    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta2-4-g313732302e64-dirty/g\" $(location :git_revision_h_in) > $OUT",
+    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta2-5-gaf29252484b9-dirty/g\" $(location :git_revision_h_in) > $OUT",
 )
 
 cxx_binary(
@@ -499,6 +499,9 @@ cxx_binary(
         ".",
     ],
     compiler_flags = [
+        "-Ithird_party/wuffs",
+        "-Isrc",
+        "-I.",
         "-DNOCTALIA_SOURCE_ASSETS_DIR=\"assets\"",
         "-DNOCTALIA_INSTALL_PREFIX=\"/usr/local\"",
         "-DNOCTALIA_INSTALL_DATADIR=\"share\"",

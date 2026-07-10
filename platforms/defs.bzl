@@ -11,9 +11,7 @@ def _platforms(ctx):
         constraints = {},
         values = {},
     )
-
-    # BuildBuddy SaaS default image (Ubuntu 20.04 with build tools).
-    image = "docker://gcr.io/flame-public/rbe-ubuntu20-04:latest"
+    image = "docker://ttl.sh/noctalia-rbe-b7fe29b22de1:24h"
     platform = ExecutionPlatformInfo(
         label = ctx.label.raw_target(),
         configuration = configuration,
@@ -21,6 +19,8 @@ def _platforms(ctx):
             local_enabled = True,
             remote_enabled = True,
             use_limited_hybrid = True,
+            allow_limited_hybrid_fallbacks = True,
+            allow_hybrid_fallbacks_on_failure = True,
             remote_execution_properties = {
                 "OSFamily": "Linux",
                 "container-image": image,
