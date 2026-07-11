@@ -28,7 +28,7 @@
 #include "wayland/wayland_connection.h"
 
 #include <algorithm>
-#include <cmath>
+#include <chrono>
 #include <cstdint>
 #include <linux/input-event-codes.h>
 #include <optional>
@@ -772,140 +772,176 @@ bool SettingsWindow::onPointerEvent(const PointerEvent& event) {
     return false;
   }
 
-  if (m_widgetAddPopup != nullptr && m_widgetAddPopup->onPointerEvent(event)) {
-    return true;
-  }
-  if (m_widgetAddPopup != nullptr
-      && m_widgetAddPopup->isOpen()
-      && !m_widgetAddPopup->isInitializing()
-      && event.type == PointerEvent::Type::Button
-      && event.state == 1) {
-    m_widgetAddPopup->close();
-    return true;
-  }
-  if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->onPointerEvent(event)) {
-    return true;
-  }
-  if (m_configExportDialogPopup != nullptr
-      && m_configExportDialogPopup->isOpen()
-      && !m_configExportDialogPopup->isInitializing()
-      && event.type == PointerEvent::Type::Button
-      && event.state == 1) {
-    m_configExportDialogPopup->close();
-    return true;
-  }
-  if (m_searchPickerPopup != nullptr && m_searchPickerPopup->onPointerEvent(event)) {
-    return true;
-  }
-  if (m_searchPickerPopup != nullptr
-      && m_searchPickerPopup->isOpen()
-      && !m_searchPickerPopup->isInitializing()
-      && event.type == PointerEvent::Type::Button
-      && event.state == 1) {
-    m_searchPickerPopup->close();
-    return true;
-  }
-  if (m_editorSheetPopup != nullptr && m_editorSheetPopup->onPointerEvent(event)) {
-    return true;
-  }
-  if (m_editorSheetPopup != nullptr
-      && m_editorSheetPopup->isOpen()
-      && !m_editorSheetPopup->isInitializing()
-      && event.type == PointerEvent::Type::Button
-      && event.state == 1) {
-    m_editorSheetPopup->close();
-    return true;
-  }
+  const auto totalStart = std::chrono::steady_clock::now();
+  auto logSection = [&](std::string_view name, std::chrono::steady_clock::time_point start) {
+    const auto ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+    if (ms >= 20.0) {
+      kLog.warn("onPointerEvent {} took {:.1f}ms (type={})", name, ms, static_cast<int>(event.type));
+    }
+  };
 
-  if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
-    if (m_selectPopup->onPointerEvent(event)) {
+  {
+    const auto start = std::chrono::steady_clock::now();
+    if (m_widgetAddPopup != nullptr && m_widgetAddPopup->onPointerEvent(event)) {
+      logSection("widgetAddPopup", start);
       return true;
     }
-    if (event.type == PointerEvent::Type::Button && event.state == 1) {
-      m_selectPopup->closeSelectDropdown();
+    if (m_widgetAddPopup != nullptr
+        && m_widgetAddPopup->isOpen()
+        && !m_widgetAddPopup->isInitializing()
+        && event.type == PointerEvent::Type::Button
+        && event.state == 1) {
+      m_widgetAddPopup->close();
+      logSection("widgetAddPopup close", start);
       return true;
     }
-  }
+    if (m_configExportDialogPopup != nullptr && m_configExportDialogPopup->onPointerEvent(event)) {
+      logSection("configExportDialogPopup", start);
+      return true;
+    }
+    if (m_configExportDialogPopup != nullptr
+        && m_configExportDialogPopup->isOpen()
+        && !m_configExportDialogPopup->isInitializing()
+        && event.type == PointerEvent::Type::Button
+        && event.state == 1) {
+      m_configExportDialogPopup->close();
+      logSection("configExportDialogPopup close", start);
+      return true;
+    }
+    if (m_searchPickerPopup != nullptr && m_searchPickerPopup->onPointerEvent(event)) {
+      logSection("searchPickerPopup", start);
+      return true;
+    }
+    if (m_searchPickerPopup != nullptr
+        && m_searchPickerPopup->isOpen()
+        && !m_searchPickerPopup->isInitializing()
+        && event.type == PointerEvent::Type::Button
+        && event.state == 1) {
+      m_searchPickerPopup->close();
+      logSection("searchPickerPopup close", start);
+      return true;
+    }
+    if (m_editorSheetPopup != nullptr && m_editorSheetPopup->onPointerEvent(event)) {
+      logSection("editorSheetPopup", start);
+      return true;
+    }
+    if (m_editorSheetPopup != nullptr
+        && m_editorSheetPopup->isOpen()
+        && !m_editorSheetPopup->isInitializing()
+        && event.type == PointerEvent::Type::Button
+        && event.state == 1) {
+      m_editorSheetPopup->close();
+      logSection("editorSheetPopup close", start);
+      return true;
+    }
 
-  if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
-    return true;
-  }
-  if (m_actionsMenuPopup != nullptr
-      && m_actionsMenuPopup->isOpen()
-      && event.type == PointerEvent::Type::Button
-      && event.state == 1) {
-    m_actionsMenuPopup->close();
-    return true;
+    if (m_selectPopup != nullptr && m_selectPopup->isSelectDropdownOpen()) {
+      if (m_selectPopup->onPointerEvent(event)) {
+        logSection("selectPopup", start);
+        return true;
+      }
+      if (event.type == PointerEvent::Type::Button && event.state == 1) {
+        m_selectPopup->closeSelectDropdown();
+        logSection("selectPopup close", start);
+        return true;
+      }
+    }
+
+    if (m_actionsMenuPopup != nullptr && m_actionsMenuPopup->onPointerEvent(event)) {
+      logSection("actionsMenuPopup", start);
+      return true;
+    }
+    if (m_actionsMenuPopup != nullptr
+        && m_actionsMenuPopup->isOpen()
+        && event.type == PointerEvent::Type::Button
+        && event.state == 1) {
+      m_actionsMenuPopup->close();
+      logSection("actionsMenuPopup close", start);
+      return true;
+    }
+    logSection("popups", start);
   }
 
   wl_surface* const ws = m_surface->wlSurface();
   const bool onThis = (event.surface != nullptr && event.surface == ws);
   bool consumed = false;
 
-  switch (event.type) {
-  case PointerEvent::Type::Enter:
-    if (onThis) {
-      m_pointerInside = true;
-      m_inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-    }
-    break;
-  case PointerEvent::Type::Leave:
-    if (onThis) {
-      m_pointerInside = false;
-      m_inputDispatcher.pointerLeave();
-    }
-    break;
-  case PointerEvent::Type::Motion:
-    if (onThis || m_pointerInside) {
+  {
+    const auto start = std::chrono::steady_clock::now();
+    switch (event.type) {
+    case PointerEvent::Type::Enter:
       if (onThis) {
         m_pointerInside = true;
+        m_inputDispatcher.pointerEnter(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
       }
-      const std::uint32_t serial = m_wayland != nullptr ? m_wayland->lastInputSerial() : 0;
-      m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), serial);
-      consumed = m_pointerInside;
-    }
-    break;
-  case PointerEvent::Type::Button: {
-    const bool pressed = (event.state == 1);
-    if (onThis || m_pointerInside) {
+      break;
+    case PointerEvent::Type::Leave:
       if (onThis) {
-        m_pointerInside = true;
+        m_pointerInside = false;
+        m_inputDispatcher.pointerLeave();
       }
-      m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
-      if (pressed
-          && event.button == BTN_LEFT
-          && m_inputDispatcher.hoveredArea() == nullptr
-          && headerDragRegionContains(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
-        m_surface->beginMove(event.serial);
+      break;
+    case PointerEvent::Type::Motion:
+      if (onThis || m_pointerInside) {
+        if (onThis) {
+          m_pointerInside = true;
+        }
+        const std::uint32_t serial = m_wayland != nullptr ? m_wayland->lastInputSerial() : 0;
+        m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), serial);
+        consumed = m_pointerInside;
+      }
+      break;
+    case PointerEvent::Type::Button: {
+      const bool pressed = (event.state == 1);
+      if (onThis || m_pointerInside) {
+        if (onThis) {
+          m_pointerInside = true;
+        }
+        m_inputDispatcher.pointerMotion(static_cast<float>(event.sx), static_cast<float>(event.sy), event.serial);
+        if (pressed
+            && event.button == BTN_LEFT
+            && m_inputDispatcher.hoveredArea() == nullptr
+            && headerDragRegionContains(static_cast<float>(event.sx), static_cast<float>(event.sy))) {
+          m_surface->beginMove(event.serial);
+          consumed = true;
+          break;
+        }
+        m_inputDispatcher.pointerButton(
+            static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
+        );
+        consumed = m_pointerInside;
+      }
+      break;
+    }
+    case PointerEvent::Type::Axis:
+      if (m_pointerInside) {
+        m_inputDispatcher.pointerAxis(
+            static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis, event.axisSource, event.axisValue,
+            event.axisDiscrete, event.axisValue120, event.axisLines
+        );
         consumed = true;
-        break;
       }
-      m_inputDispatcher.pointerButton(
-          static_cast<float>(event.sx), static_cast<float>(event.sy), event.button, pressed
-      );
-      consumed = m_pointerInside;
+      break;
     }
-    break;
-  }
-  case PointerEvent::Type::Axis:
-    if (m_pointerInside) {
-      m_inputDispatcher.pointerAxis(
-          static_cast<float>(event.sx), static_cast<float>(event.sy), event.axis, event.axisSource, event.axisValue,
-          event.axisDiscrete, event.axisValue120, event.axisLines
-      );
-      consumed = true;
-    }
-    break;
+    logSection("inputDispatcher", start);
   }
 
-  if (m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
-    if (m_sceneRoot->layoutDirty()) {
-      m_surface->requestLayout();
-    } else {
-      m_surface->requestRedraw();
+  {
+    const auto start = std::chrono::steady_clock::now();
+    if (m_sceneRoot != nullptr && (m_sceneRoot->paintDirty() || m_sceneRoot->layoutDirty())) {
+      if (m_sceneRoot->layoutDirty()) {
+        m_surface->requestLayout();
+      } else {
+        m_surface->requestRedraw();
+      }
     }
+    logSection("dirtyCheck", start);
   }
 
+  const auto totalMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - totalStart).count();
+  if (totalMs >= 20.0) {
+    kLog.warn("onPointerEvent total took {:.1f}ms (type={})", totalMs, static_cast<int>(event.type));
+  }
   return consumed;
 }
 
