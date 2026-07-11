@@ -92,6 +92,16 @@ jobs:
             fi
           done < /tmp/seen_libs.txt
 
+          # ldd resolves symlinks, but the dynamic linker looks for the SONAME.
+          # Re-create SONAME symlinks so bundled libraries are found at runtime.
+          for real in dist/noctalia/lib/*.so*; do
+            if [ -f "$real" ] && [ ! -L "$real" ]; then
+              soname=$(patchelf --print-soname "$real" 2>/dev/null)
+              if [ -n "$soname" ] && [ "$soname" != "$(basename "$real")" ]; then
+                ln -sf "$(basename "$real")" "dist/noctalia/lib/$soname"
+              fi
+            fi
+          done
           dist/noctalia/noctalia --version
 
           # Include runtime assets so the extracted binary works without installation.
