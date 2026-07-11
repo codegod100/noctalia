@@ -413,6 +413,7 @@ _noctalia_sources = files(
   'src/config/atomic_file.cpp',
   'src/config/config_export.cpp',
   'src/config/config_merge.cpp',
+  'src/config/config_migrations.cpp',
   'src/config/config_overrides.cpp',
   'src/config/config_service.cpp',
   'src/config/config_types.cpp',
@@ -853,6 +854,7 @@ _noctalia_sources = files(
   'src/theme/contrast.cpp',
   'src/theme/image_loader.cpp',
   'src/theme/palette_generator.cpp',
+  'src/theme/palette_transform.cpp',
   'src/theme/m3_schemes.cpp',
   'src/theme/custom_schemes.cpp',
   'src/theme/builtin_palettes.cpp',
@@ -1129,6 +1131,18 @@ ical_recurrence_test = executable('ical_recurrence_test',
 
 test('ical_recurrence', ical_recurrence_test)
 
+google_client_calendar_list_test = executable('google_client_calendar_list_test',
+  sources: files(
+    'tests/google_client_calendar_list_test.cpp',
+  ),
+  dependencies: [
+    nlohmann_dep,
+  ],
+  include_directories: _noctalia_inc,
+)
+
+test('google_client_calendar_list', google_client_calendar_list_test)
+
 time_format_test = executable('time_format_test',
   sources: files(
     'tests/time_format_test.cpp',
@@ -1375,6 +1389,19 @@ config_schema_roundtrip_test = executable('config_schema_roundtrip_test',
 )
 
 test('config_schema_roundtrip', config_schema_roundtrip_test)
+
+config_migration_test = executable('config_migration_test',
+  sources: files(
+    'tests/config_migration_test.cpp',
+    'src/config/config_migrations.cpp',
+  ),
+  include_directories: _noctalia_inc,
+  dependencies: [
+    tomlplusplus_dep,
+  ],
+)
+
+test('config_migration', config_migration_test)
 
 config_widget_test = executable('config_widget_test',
   sources: files(

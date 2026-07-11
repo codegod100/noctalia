@@ -458,6 +458,11 @@ namespace settings {
       ));
     }
     entries.push_back(makeEntry(
+        SettingsSection::Appearance, "theme", tr("settings.schema.appearance.pure-black-dark.label"),
+        tr("settings.schema.appearance.pure-black-dark.description"), {"theme", "pure_black_dark"},
+        ToggleSetting{cfg.theme.pureBlackDark}, "oled amoled true black background contrast"
+    ));
+    entries.push_back(makeEntry(
         SettingsSection::Appearance, "interface", tr("settings.schema.appearance.ui-scale.label"),
         tr("settings.schema.appearance.ui-scale.description"), {"shell", "ui_scale"},
         sliderFor(cfg.shell.uiScale, noctalia::config::schema::kScaleRange, false), "size"
@@ -1126,27 +1131,6 @@ namespace settings {
         &ShellConfig::PanelConfig::polkitPlacement
     ));
     entries.push_back(makeEntry(
-        SettingsSection::Panels, "session-panel", tr("settings.schema.panels.placement-session.label"),
-        tr("settings.schema.panels.placement-session.description"), {"shell", "panel", "session_placement"},
-        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.sessionPlacement)),
-        "attached floating bar panel power menu position"
-    ));
-    entries.push_back(panelPositionEntry(
-        SettingsSection::Panels, "session-panel", "session", "settings.schema.panels.position-session.label",
-        "settings.schema.panels.position-session.description", cfg.shell.panel.sessionPosition,
-        &ShellConfig::PanelConfig::sessionPlacement
-    ));
-    {
-      auto e = makeEntry(
-          SettingsSection::Panels, "session-panel", tr("settings.schema.panels.open-near-click-session.label"),
-          tr("settings.schema.panels.open-near-click-session.description"),
-          {"shell", "panel", "open_near_click_session"}, ToggleSetting{cfg.shell.panel.openNearClickSession},
-          "open near click position anchor"
-      );
-      e.visibleWhen = [](const Config& c) { return c.shell.panel.sessionPlacement == PanelPlacement::Attached; };
-      entries.push_back(std::move(e));
-    }
-    entries.push_back(makeEntry(
         SettingsSection::Panels, "wallpaper", tr("settings.schema.panels.placement-wallpaper.label"),
         tr("settings.schema.panels.placement-wallpaper.description"), {"shell", "panel", "wallpaper_placement"},
         asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.wallpaperPlacement)),
@@ -1487,16 +1471,6 @@ namespace settings {
         TextSetting{.value = cfg.shell.dateFormat, .placeholder = "%A, %x", .browseFileExtensions = {}},
         "calendar date format strftime chrono"
     ));
-    const SettingVisibility weatherOn = [](const Config& c) { return c.weather.enabled; };
-    {
-      auto e = makeEntry(
-          SettingsSection::Shell, "general", tr("settings.schema.shell.show-location.label"),
-          tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
-          ToggleSetting{cfg.shell.showLocation}, "weather"
-      );
-      e.visibleWhen = weatherOn;
-      entries.push_back(std::move(e));
-    }
     entries.push_back(makeEntry(
         SettingsSection::Shell, "general", tr("settings.schema.shell.middle-click-opens-widget-settings.label"),
         tr("settings.schema.shell.middle-click-opens-widget-settings.description"),
@@ -2114,6 +2088,16 @@ namespace settings {
         tr("settings.schema.services.weather.description"), {"weather", "enabled"}, ToggleSetting{cfg.weather.enabled},
         "forecast"
     ));
+    const SettingVisibility weatherOn = [](const Config& c) { return c.weather.enabled; };
+    {
+      auto e = makeEntry(
+          SettingsSection::Location, "weather", tr("settings.schema.shell.show-location.label"),
+          tr("settings.schema.shell.show-location.description"), {"shell", "show_location"},
+          ToggleSetting{cfg.shell.showLocation}, "weather"
+      );
+      e.visibleWhen = weatherOn;
+      entries.push_back(std::move(e));
+    }
     {
       auto e = makeEntry(
           SettingsSection::Location, "weather", tr("settings.schema.services.weather-unit.label"),
@@ -2321,6 +2305,47 @@ namespace settings {
     ));
 
     // Power
+    entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.panels.placement-session.label"),
+        tr("settings.schema.panels.placement-session.description"), {"shell", "panel", "session_placement"},
+        asSegmented(enumSelect(kPanelPlacements, cfg.shell.panel.sessionPlacement)),
+        "attached floating bar panel power menu position"
+    ));
+    entries.push_back(panelPositionEntry(
+        SettingsSection::Power, "session-panel", "session", "settings.schema.panels.position-session.label",
+        "settings.schema.panels.position-session.description", cfg.shell.panel.sessionPosition,
+        &ShellConfig::PanelConfig::sessionPlacement
+    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Power, "session-panel", tr("settings.schema.panels.open-near-click-session.label"),
+          tr("settings.schema.panels.open-near-click-session.description"),
+          {"shell", "panel", "open_near_click_session"}, ToggleSetting{cfg.shell.panel.openNearClickSession},
+          "open near click position anchor"
+      );
+      e.visibleWhen = [](const Config& c) { return c.shell.panel.sessionPlacement == PanelPlacement::Attached; };
+      entries.push_back(std::move(e));
+    }
+    entries.push_back(makeEntry(
+        SettingsSection::Power, "session-panel", tr("settings.schema.power.session-grid.label"),
+        tr("settings.schema.power.session-grid.description"), {"shell", "session", "grid"},
+        ToggleSetting{.checked = cfg.shell.session.grid}, "session panel grid layout rows columns"
+    ));
+    {
+      auto e = makeEntry(
+          SettingsSection::Power, "session-panel", tr("settings.schema.power.session-grid-columns.label"),
+          tr("settings.schema.power.session-grid-columns.description"), {"shell", "session", "grid_columns"},
+          StepperSetting{
+              .value = static_cast<int>(cfg.shell.session.gridColumns),
+              .minValue = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.min.value()),
+              .maxValue = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.max.value()),
+              .step = static_cast<int>(noctalia::config::schema::kSessionGridColumnsRange.step.value()),
+          },
+          "session panel grid columns per row"
+      );
+      e.visibleWhen = [](const Config& c) { return c.shell.session.grid; };
+      entries.push_back(std::move(e));
+    }
     entries.push_back(makeEntry(
         SettingsSection::Power, "session-panel", tr("settings.schema.power.session-actions.label"),
         tr("settings.schema.power.session-actions.description"), {"shell", "session", "actions"},

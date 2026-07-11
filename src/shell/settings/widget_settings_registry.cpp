@@ -51,7 +51,8 @@ namespace settings {
 
     using i18n::tr;
 
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginWidget(std::string_view type);
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry = nullptr);
 
     const std::vector<WidgetTypeSpec> kWidgetTypeSpecs = {
         {.type = "active_window", .labelKey = "settings.widgets.types.active-window", .glyph = "app-window"},
@@ -179,9 +180,11 @@ namespace settings {
     }
 
     // Resolve a widget `type` to a plugin [[widget]] entry, or nullopt for built-ins.
-    std::optional<scripting::ResolvedPluginEntry> resolvePluginWidget(std::string_view type) {
-      scripting::PluginRegistry::instance().ensureScanned();
-      auto entry = scripting::PluginRegistry::instance().resolve(type);
+    std::optional<scripting::ResolvedPluginEntry>
+    resolvePluginWidget(std::string_view type, scripting::PluginRegistry* pluginRegistry) {
+      auto& registry = pluginRegistry != nullptr ? *pluginRegistry : scripting::PluginRegistry::instance();
+      registry.ensureScanned();
+      auto entry = registry.resolve(type);
       if (entry.has_value() && entry->entry->kind == scripting::PluginEntryKind::Widget) {
         return entry;
       }
@@ -550,7 +553,10 @@ namespace settings {
   std::vector<WidgetSettingSpec> commonWidgetSettingSpecs(std::string_view shellFontFamily) {
     const WidgetSettingVisibility capsuleOn{"capsule", {"true"}};
 
+    auto enabled = boolSpec("enabled", true);
+    enabled.visibleInInspector = false;
     auto anchor = withGroup(boolSpec("anchor", false, true), WidgetSettingGroup::Presentation);
+    auto interactive = withGroup(boolSpec("interactive", true), WidgetSettingGroup::Presentation);
     auto scale = withGroup(doubleSpec("scale", 1.0, 0.2, 2.5, 0.05), WidgetSettingGroup::Presentation);
     auto widgetColor = withGroup(colorSpec("color", {}, true), WidgetSettingGroup::Presentation);
     auto widgetIconColor = withGroup(colorSpec("icon_color", {}, true), WidgetSettingGroup::Presentation);
@@ -590,10 +596,10 @@ namespace settings {
     capsuleOpacity.visibleWhen = capsuleOn;
 
     return {
-        std::move(anchor),         std::move(scale),         std::move(widgetColor),       std::move(widgetIconColor),
-        std::move(fontFamily),     std::move(fontWeight),    std::move(capsuleToggle),     std::move(capsuleRadius),
-        std::move(capsuleFill),    std::move(capsuleBorder), std::move(capsuleForeground), std::move(capsulePadding),
-        std::move(capsuleOpacity),
+        std::move(enabled),           std::move(anchor),          std::move(interactive),    std::move(scale),
+        std::move(widgetColor),       std::move(widgetIconColor), std::move(fontFamily),     std::move(fontWeight),
+        std::move(capsuleToggle),     std::move(capsuleRadius),   std::move(capsuleFill),    std::move(capsuleBorder),
+        std::move(capsuleForeground), std::move(capsulePadding),  std::move(capsuleOpacity),
     };
   }
 
@@ -697,6 +703,7 @@ namespace settings {
       add(stringSpec("format", "{:%H:%M}"));
       add(stringSpec("vertical_format"));
       add(stringSpec("tooltip_format"));
+      add(stringSpec("timezone", ""));
     } else if (type == "clipboard") {
       add(glyphSpec("glyph", "clipboard"));
       add(stringSpec("custom_image", ""));
@@ -1195,6 +1202,9 @@ namespace settings {
           {"attached", tr("settings.options.shell.panel-placement.attached")},
           {"floating", tr("settings.options.shell.panel-placement.floating")},
       };
+      for (const auto& option : spec.options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.schema.type = schemaTypeForControl(spec.control);
       return spec;
     };
@@ -1219,6 +1229,9 @@ namespace settings {
           {"bottom_center", tr("settings.options.screen-position.bottom-center")},
           {"bottom_right", tr("settings.options.screen-position.bottom-right")},
       };
+      for (const auto& option : spec.options) {
+        spec.schema.enumValues.push_back(option.value);
+      }
       spec.schema.type = schemaTypeForControl(spec.control);
       spec.visibleWhen = WidgetSettingVisibility{placementKey, {"floating"}};
       return spec;
@@ -1330,8 +1343,15 @@ namespace settings {
     return out;
   }
 
-  noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type, const WidgetConfig* config) {
+  noctalia::config::schema::WidgetSettingSchema
+  widgetSettingSchema(std::string_view type, const WidgetConfig* config, scripting::PluginRegistry* pluginRegistry) {
     noctalia::config::schema::WidgetSettingSchema out;
+    if (auto pluginEntry = resolvePluginWidget(type, pluginRegistry)) {
+      for (const auto& spec : manifestSettingSpecs(pluginEntry->entry->settings)) {
+        out.push_back(spec.schema);
+      }
+      return out;
+    }
     for (const auto& spec : widgetSettingSpecs(type, config, "sans-serif")) {
       out.push_back(spec.schema);
     }

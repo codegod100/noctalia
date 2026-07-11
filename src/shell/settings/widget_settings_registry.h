@@ -14,6 +14,7 @@
 namespace scripting {
   struct ManifestField;
   struct PluginEntry;
+  class PluginRegistry;
   class PluginTranslationCatalog;
 } // namespace scripting
 
@@ -106,6 +107,7 @@ namespace settings {
     bool literalLabels = false;     // when true, option.labelKey holds a literal label (not an i18n key)
     WidgetSettingGroup group = WidgetSettingGroup::Widget;
     std::vector<WidgetSettingSelectOption> options; // value+label; values mirror schema.enumValues
+    bool visibleInInspector = true;
     bool advanced = false;
     bool segmented = false;              // applies when control == Select
     bool integerValue = false;           // applies when control == Select
@@ -151,8 +153,9 @@ namespace settings {
   // layer (e.g. `config validate`). For plugin widgets the type alone resolves the
   // manifest, so the config arg is no longer required for them.
   [[nodiscard]] noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(std::string_view type);
-  [[nodiscard]] noctalia::config::schema::WidgetSettingSchema
-  widgetSettingSchema(std::string_view type, const WidgetConfig* config);
+  [[nodiscard]] noctalia::config::schema::WidgetSettingSchema widgetSettingSchema(
+      std::string_view type, const WidgetConfig* config, scripting::PluginRegistry* pluginRegistry = nullptr
+  );
   [[nodiscard]] std::optional<noctalia::config::schema::WidgetSettingField>
   findWidgetSettingField(std::string_view widgetType, std::string_view settingKey);
 

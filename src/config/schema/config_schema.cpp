@@ -1115,6 +1115,7 @@ namespace noctalia::config::schema {
         field(&ThemeConfig::customPalette, "custom_palette"),
         field(&ThemeConfig::wallpaperScheme, "wallpaper_scheme"),
         enumField(&ThemeConfig::mode, "mode", kThemeModes),
+        field(&ThemeConfig::pureBlackDark, "pure_black_dark"),
         subTable(&ThemeConfig::templates, "templates", templatesSchema()),
     };
     return s;
@@ -1357,6 +1358,8 @@ namespace noctalia::config::schema {
               &ShellSessionConfig::actions, "actions", sessionActionSchema(),
               [](const SessionPanelActionConfig& a) { return !a.action.empty(); }
           ),
+          field(&ShellSessionConfig::grid, "grid"),
+          field(&ShellSessionConfig::gridColumns, "grid_columns", kSessionGridColumnsRange),
           subTable(&ShellSessionConfig::power, "power", shellSessionPowerSchema()),
       };
       return s;

@@ -214,6 +214,10 @@ struct SessionPanelActionConfig {
 
 struct ShellSessionConfig {
   std::vector<SessionPanelActionConfig> actions;
+  // Lay the session panel actions out over multiple rows of `gridColumns` instead of
+  // fitting them on a single row.
+  bool grid = false;
+  std::int32_t gridColumns = 3;
   // Optional overrides for built-in session power commands. Empty = auto-detect at runtime.
   struct ShellSessionPowerConfig {
     // Shell strings run with `/bin/sh -lc` (shell=True).
@@ -348,6 +352,7 @@ struct WidgetBarCapsuleSpec {
   std::optional<float> radius;
   // Capsule background opacity multiplier (0.0–1.0).
   float opacity = 1.0f;
+  bool hoverHighlight = true;
 
   bool operator==(const WidgetBarCapsuleSpec&) const = default;
 };
@@ -1330,6 +1335,7 @@ struct ThemeConfig {
   std::string customPalette;
   std::string wallpaperScheme = "m3-content";
   ThemeMode mode = ThemeMode::Dark;
+  bool pureBlackDark = false;
   TemplatesConfig templates;
 
   bool operator==(const ThemeConfig&) const = default;
