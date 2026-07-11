@@ -11,7 +11,7 @@ genrule(
     name = "git_revision_header",
     srcs = [":git_revision_h_in"],
     out = "noctalia_git_revision.h",
-    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta3-dirty/g\" $(location :git_revision_h_in) > $OUT",
+    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta9-dirty/g\" $(location :git_revision_h_in) > $OUT",
 )
 
 # Vendored libraries defined at the repo root so include_directories resolve to
@@ -666,9 +666,12 @@ cxx_binary(
         ".",
     ],
     compiler_flags = [
+
         "-Ithird_party/wuffs",
         "-Isrc",
         "-I.",
+        "-DNDEBUG",
+        "-O3",
         "-DNOCTALIA_SOURCE_ASSETS_DIR=\"assets\"",
         "-DNOCTALIA_INSTALL_PREFIX=\"/usr/local\"",
         "-DNOCTALIA_INSTALL_DATADIR=\"share\"",
