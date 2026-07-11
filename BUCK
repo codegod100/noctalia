@@ -11,7 +11,7 @@ genrule(
     name = "git_revision_header",
     srcs = [":git_revision_h_in"],
     out = "noctalia_git_revision.h",
-    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta9-dirty/g\" $(location :git_revision_h_in) > $OUT",
+    cmd = "sed -e \"s/@VCS_TAG@/v5.0.0-beta11-dirty/g\" $(location :git_revision_h_in) > $OUT",
 )
 
 # Vendored libraries defined at the repo root so include_directories resolve to
@@ -203,6 +203,7 @@ cxx_binary(
         "src/config/atomic_file.cpp",
         "src/config/config_export.cpp",
         "src/config/config_merge.cpp",
+        "src/config/config_migrations.cpp",
         "src/config/config_overrides.cpp",
         "src/config/config_service.cpp",
         "src/config/config_types.cpp",
@@ -643,6 +644,7 @@ cxx_binary(
         "src/theme/contrast.cpp",
         "src/theme/image_loader.cpp",
         "src/theme/palette_generator.cpp",
+        "src/theme/palette_transform.cpp",
         "src/theme/m3_schemes.cpp",
         "src/theme/custom_schemes.cpp",
         "src/theme/builtin_palettes.cpp",
@@ -666,12 +668,9 @@ cxx_binary(
         ".",
     ],
     compiler_flags = [
-
         "-Ithird_party/wuffs",
         "-Isrc",
         "-I.",
-        "-DNDEBUG",
-        "-O3",
         "-DNOCTALIA_SOURCE_ASSETS_DIR=\"assets\"",
         "-DNOCTALIA_INSTALL_PREFIX=\"/usr/local\"",
         "-DNOCTALIA_INSTALL_DATADIR=\"share\"",

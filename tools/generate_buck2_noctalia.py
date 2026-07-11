@@ -1,49 +1,31 @@
-#!/ usr / bin / env python3
-""
-    "Generate the root BUCK file for the main noctalia executable."
-    ""
+#!/usr/bin/env python3
+"""Generate the root BUCK file for the main noctalia executable."""
 
-    import re import subprocess import sys from pathlib import Path
+import re
+import subprocess
+import sys
+from pathlib import Path
 
-        PKG_LIBS =
-            [
-              "sdbus-c++",
-              "wayland-client",
-              "wayland-egl",
-              "freetype2",
-              "fontconfig",
-              "cairo",
-              "pango",
-              "pangocairo",
-              "pangoft2",
-              "harfbuzz",
-              "librsvg-2.0",
-              "xkbcommon",
-              "glib-2.0",
-              "gobject-2.0",
-              "gio-2.0",
-              "polkit-agent-1",
-              "polkit-gobject-1",
-              "libpipewire-0.3",
-              "wireplumber-0.5",
-              "libcurl",
-              "libqalculate",
-              "libxml-2.0",
-              "md4c",
-              "libwebp",
-              "pam",
-              "egl",
-              "glesv2",
-            ]
+PKG_LIBS = [
+    "sdbus-c++", "wayland-client", "wayland-egl", "freetype2", "fontconfig",
+    "cairo", "pango", "pangocairo", "pangoft2", "harfbuzz", "librsvg-2.0",
+    "xkbcommon", "glib-2.0", "gobject-2.0", "gio-2.0",
+    "polkit-agent-1", "polkit-gobject-1", "libpipewire-0.3", "wireplumber-0.5",
+    "libcurl", "libqalculate", "libxml-2.0", "md4c", "libwebp", "pam",
+    "egl", "glesv2",
+]
 
-            def
-            extract_sources(meson_path : Path) -> list[str] : text = meson_path.read_text() m =
-                re.search(r "_noctalia_sources\s*=\s*files\((.*?)\)", text, re.DOTALL) if not m
-    : raise RuntimeError("Could not find _noctalia_sources in meson.build") return re
-          .findall(r "'([^']+\.cpp)'", m.group(1))
 
-              def git_revision()
-          ->str : try:
+def extract_sources(meson_path: Path) -> list[str]:
+    text = meson_path.read_text()
+    m = re.search(r"_noctalia_sources\s*=\s*files\((.*?)\)", text, re.DOTALL)
+    if not m:
+        raise RuntimeError("Could not find _noctalia_sources in meson.build")
+    return re.findall(r"'([^']+\.cpp)'", m.group(1))
+
+
+def git_revision() -> str:
+    try:
         return subprocess.check_output(
             ["git", "describe", "--tags", "--always", "--dirty=-dirty", "--abbrev=12"],
             text=True, stderr=subprocess.DEVNULL,
@@ -73,13 +55,13 @@ def define(name: str, value: str) -> str:
 
 def vendored_libs() -> str:
     return """
-#Vendored libraries defined at the repo root so include_directories resolve to
-#repo - relative paths.This is required for Remote Build Execution : when the
-#library is defined inside a sub - package, buck2 resolves include_directories
-#relative to the package for local builds but the remote worker receives an
-#unusable path.Defining them at the root keeps the include path identical on
-#both local and remote workers.raw_headers ensures all headers are uploaded as
-#action inputs for RBE.
+# Vendored libraries defined at the repo root so include_directories resolve to
+# repo-relative paths. This is required for Remote Build Execution: when the
+# library is defined inside a sub-package, buck2 resolves include_directories
+# relative to the package for local builds but the remote worker receives an
+# unusable path. Defining them at the root keeps the include path identical on
+# both local and remote workers. raw_headers ensures all headers are uploaded as
+# action inputs for RBE.
 
 cxx_library(
     name = "dr_wav",
@@ -278,18 +260,15 @@ def generate() -> str:
         '        "third_party/wuffs",',
         '        ".",',
         "    ],",
-    "    compiler_flags = [\n",
-    '        "-Ithird_party/wuffs",',
-    '        "-Isrc",',
-    '        "-I.",',
-    '        "-DNDEBUG",',
-    '        "-O3",',
-    define("NOCTALIA_SOURCE_ASSETS_DIR", "assets") + ",",
-    define("NOCTALIA_INSTALL_PREFIX", "/usr/local") + ",",
-    define("NOCTALIA_INSTALL_DATADIR", "share") + ",",
-    define("NOCTALIA_VERSION", "5.0.0") + ",",
-    "    ],",
-
+        "    compiler_flags = [",
+        '        "-Ithird_party/wuffs",',
+        '        "-Isrc",',
+        '        "-I.",',
+        define("NOCTALIA_SOURCE_ASSETS_DIR", "assets") + ",",
+        define("NOCTALIA_INSTALL_PREFIX", "/usr/local") + ",",
+        define("NOCTALIA_INSTALL_DATADIR", "share") + ",",
+        define("NOCTALIA_VERSION", "5.0.0") + ",",
+        "    ],",
         "    linker_flags = [",
         f"        {linker_flags},",
         "    ],",
