@@ -71,18 +71,17 @@ jobs:
 
           cp "$BINARY" dist/noctalia/noctalia
           chmod +x dist/noctalia/noctalia
-          # Use the host system's standard dynamic linker so the release binary
-          # runs on non-NixOS systems and uses the host glibc. The bundled libs
-          # are found via $ORIGIN/lib.
-          patchelf --set-interpreter /lib64/ld-linux-x86-64.so.2 dist/noctalia/noctalia
           patchelf --set-rpath '$ORIGIN/lib' dist/noctalia/noctalia
-          # that already contains read-only library files.
           # glibc and the dynamic linker must come from the host system; bundling
           # a newer Nix glibc than the host loader supports causes ABI errors.
-          EXCLUDE_LIBS="ld-linux-x86-64.so.2 libc.so.6 libm.so.6 libpthread.so.0 libdl.so.2 libresolv.so.2 librt.so.1 libutil.so.1 libnsl.so.1 libcrypt.so.1"
+          EXCLUDE_LIBS="ld-linux-x86-64.so.2 ld-linux.so.2 libc.so.6 libm.so.6 libmvec.so.1 libpthread.so.0 libdl.so.2 libresolv.so.2 librt.so.1 libutil.so.1 libnsl.so.1 libcrypt.so.1 libanl.so.1 libBrokenLocale.so.1 libthread_db.so.1"
           while IFS= read -r lib; do
             name=$(basename "$lib")
             skip=false
+            # Skip anything that ships with glibc (including Nix store paths).
+            if [[ "$lib" == */nix/store/*-glibc-*/lib/* ]]; then
+              skip=true
+            fi
             for ex in $EXCLUDE_LIBS; do
               if [ "$name" = "$ex" ]; then
                 skip=true
