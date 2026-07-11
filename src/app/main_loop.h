@@ -31,4 +31,10 @@ namespace noctalia::main_loop {
   // True while the main loop is inside wl_display_dispatch_pending. Useful
   // for detecting blocking roundtrips that would stall event dispatch.
   [[nodiscard]] bool isWaylandDispatchActive();
+
+  // Counters used to diagnose which kinds of Wayland events pile up during a
+  // slow wl_display_dispatch_pending call. Surface/frame code increments these
+  // while dispatch is active; the main loop logs them after dispatch returns.
+  void recordFrameCallbackDuringDispatch();
+  void recordConfigureDuringDispatch();
 } // namespace noctalia::main_loop

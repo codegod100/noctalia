@@ -4,6 +4,7 @@
 #include "cursor-shape-v1-client-protocol.h"
 
 #include <algorithm>
+#include <chrono>
 #include <clocale>
 #include <cstring>
 #include <linux/input-event-codes.h>
@@ -377,6 +378,7 @@ void WaylandSeat::handlePointerFrame(void* data, wl_pointer* /*pointer*/) {
     return;
   }
 
+  const auto frameStart = std::chrono::steady_clock::now();
   for (auto& event : events) {
     if (event.type == PointerEvent::Type::Axis
         && event.axisLines == 0.0f
@@ -399,6 +401,10 @@ void WaylandSeat::handlePointerFrame(void* data, wl_pointer* /*pointer*/) {
     }
 
     self->m_pointerEventCallback(event);
+  }
+  const auto frameMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - frameStart).count();
+  if (frameMs >= 50.0) {
+    kLog.warn("pointer frame dispatch took {:.1f}ms ({} events)", frameMs, events.size());
   }
 }
 

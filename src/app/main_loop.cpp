@@ -31,8 +31,10 @@
 namespace {
   // Tracks nested wl_display_dispatch_pending calls. Some handlers call
   // wl_display_roundtrip, which recursively dispatches; this lets us warn
-  // about the blocking call sites that stall the outer dispatch timer.
+  // about the blocking call sites that stall event dispatch.
   thread_local int g_waylandDispatchDepth = 0;
+  thread_local std::uint32_t g_frameCallbacksDuringDispatch = 0;
+  thread_local std::uint32_t g_configuresDuringDispatch = 0;
 
   struct WaylandDispatchScope {
     explicit WaylandDispatchScope() { ++g_waylandDispatchDepth; }
@@ -42,6 +44,18 @@ namespace {
 
 namespace noctalia::main_loop {
   bool isWaylandDispatchActive() { return g_waylandDispatchDepth > 0; }
+
+  void recordFrameCallbackDuringDispatch() {
+    if (g_waylandDispatchDepth > 0) {
+      ++g_frameCallbacksDuringDispatch;
+    }
+  }
+
+  void recordConfigureDuringDispatch() {
+    if (g_waylandDispatchDepth > 0) {
+      ++g_configuresDuringDispatch;
+    }
+  }
 } // namespace noctalia::main_loop
 
 namespace {
@@ -605,6 +619,14 @@ void MainLoop::run() {
       logSlowMainLoopOperation(ms, "wl_display_dispatch_pending took {:.1f}ms after read", ms);
     } else {
       logSlowMainLoopOperation(ms, "wl_display_dispatch_pending took {:.1f}ms after poll", ms);
+    }
+    if (g_frameCallbacksDuringDispatch > 0 || g_configuresDuringDispatch > 0) {
+      kLog.debug(
+          "dispatch event counts: frameCallbacks={} configures={}", g_frameCallbacksDuringDispatch,
+          g_configuresDuringDispatch
+      );
+      g_frameCallbacksDuringDispatch = 0;
+      g_configuresDuringDispatch = 0;
     }
 
     // Dispatch only sources that actually woke: an fd reported revents, or the

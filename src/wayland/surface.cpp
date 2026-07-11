@@ -1,5 +1,6 @@
 #include "wayland/surface.h"
 
+#include "app/main_loop.h"
 #include "core/log.h"
 #include "core/ui_phase.h"
 #include "ext-background-effect-v1-client-protocol.h"
@@ -374,6 +375,7 @@ std::uint32_t Surface::bufferHeightFor(std::uint32_t logicalHeight) const noexce
 }
 
 void Surface::handleFrameDone(void* data, wl_callback* callback, std::uint32_t callbackData) {
+  noctalia::main_loop::recordFrameCallbackDuringDispatch();
   auto* self = static_cast<Surface*>(data);
   (void)callbackData;
 
@@ -450,6 +452,7 @@ bool Surface::createWlSurface() {
 }
 
 void Surface::onConfigure(std::uint32_t width, std::uint32_t height) {
+  noctalia::main_loop::recordConfigureDuringDispatch();
   m_width = width;
   m_height = height;
   m_configured = true;

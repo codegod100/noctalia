@@ -1,5 +1,6 @@
 #include "shell/settings/settings_window.h"
 
+#include "app/main_loop.h"
 #include "config/config_service.h"
 #include "config/config_types.h"
 #include "core/deferred_call.h"
@@ -36,7 +37,6 @@
 #include <thread>
 #include <utility>
 #include <xkbcommon/xkbcommon-keysyms.h>
-
 namespace {
 
   constexpr Logger kLog("settings");
@@ -350,6 +350,15 @@ void SettingsWindow::open(std::string context) {
   }
 
   if (m_wayland == nullptr || m_renderContext == nullptr || !m_wayland->hasXdgShell()) {
+    return;
+  }
+
+  // Creating a toplevel performs a blocking wl_display_roundtrip. If we are
+  // inside wl_display_dispatch_pending (e.g. a key/button handler opened
+  // settings), the roundtrip stalls the outer dispatch. Defer creation to the
+  // next main-loop iteration when we are not inside dispatch.
+  if (noctalia::main_loop::isWaylandDispatchActive()) {
+    DeferredCall::callLater([this, context = std::move(context)]() mutable { open(std::move(context)); });
     return;
   }
 
