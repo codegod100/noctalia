@@ -20,15 +20,29 @@ namespace {
         * Mat3::translation(-cx, -cy);
   }
 
-  Mat3 computeWorldTransform(const Node* node) {
-    Mat3 world = Mat3::identity();
-    for (const Node* current = node; current != nullptr; current = current->parent()) {
-      world = localTransform(current) * world;
-    }
-    return world;
-  }
-
 } // namespace
+
+const Mat3& Node::worldTransform() const {
+  if (m_worldTransformDirty) {
+    if (m_parent == nullptr) {
+      m_worldTransform = localTransform(this);
+    } else {
+      m_worldTransform = m_parent->worldTransform() * localTransform(this);
+    }
+    m_worldTransformDirty = false;
+  }
+  return m_worldTransform;
+}
+
+void Node::invalidateWorldTransform() {
+  if (m_worldTransformDirty) {
+    return;
+  }
+  m_worldTransformDirty = true;
+  for (const auto& child : m_children) {
+    child->invalidateWorldTransform();
+  }
+}
 
 LayoutConstraints LayoutConstraints::unconstrained() noexcept { return {}; }
 
@@ -175,7 +189,7 @@ bool Node::pointInsideNode(
     return false;
   }
 
-  const Mat3 inverse = computeWorldTransform(node).inverse();
+  const Mat3 inverse = node->worldTransform().inverse();
   const Vec2 local = inverse.transformPoint(sceneX, sceneY);
   localX = local.x;
   localY = local.y;
@@ -188,6 +202,7 @@ void Node::setPosition(float x, float y) {
   }
   m_x = x;
   m_y = y;
+  invalidateWorldTransform();
   markPaintDirty();
 }
 
@@ -200,6 +215,7 @@ void Node::setSize(float width, float height) {
   }
   m_width = width;
   m_height = height;
+  invalidateWorldTransform();
   markLayoutDirty();
 }
 
@@ -212,6 +228,7 @@ void Node::setFrameSize(float width, float height) {
   }
   m_width = width;
   m_height = height;
+  invalidateWorldTransform();
   markPaintDirty();
 }
 
@@ -220,6 +237,7 @@ void Node::setRotation(float radians) {
     return;
   }
   m_rotation = radians;
+  invalidateWorldTransform();
   markPaintDirty();
 }
 
@@ -231,6 +249,7 @@ void Node::setScale(float scaleX, float scaleY) {
   }
   m_scaleX = scaleX;
   m_scaleY = scaleY;
+  invalidateWorldTransform();
   markPaintDirty();
 }
 
@@ -324,6 +343,7 @@ void Node::setInvalidationCallback(std::function<void(NodeInvalidation)> callbac
 Node* Node::addChild(std::unique_ptr<Node> child) {
   uiAssertSceneMutationAllowed("Node::addChild");
   child->m_parent = this;
+  child->invalidateWorldTransform();
   if (m_animationManager != nullptr && child->m_animationManager == nullptr) {
     child->setAnimationManager(m_animationManager);
   }
@@ -339,6 +359,7 @@ Node* Node::addChild(std::unique_ptr<Node> child) {
 Node* Node::insertChildAt(std::size_t index, std::unique_ptr<Node> child) {
   uiAssertSceneMutationAllowed("Node::insertChildAt");
   child->m_parent = this;
+  child->invalidateWorldTransform();
   if (m_animationManager != nullptr && child->m_animationManager == nullptr) {
     child->setAnimationManager(m_animationManager);
   }
@@ -366,6 +387,7 @@ std::unique_ptr<Node> Node::removeChild(Node* child) {
   auto removed = std::move(*it);
   m_children.erase(it);
   removed->m_parent = nullptr;
+  removed->invalidateWorldTransform();
   markLayoutDirty();
   return removed;
 }
@@ -473,7 +495,7 @@ Node* Node::hitTestImpl(Node* node, float px, float py) {
 }
 
 void Node::absolutePosition(const Node* node, float& outX, float& outY) {
-  const Vec2 topLeft = computeWorldTransform(node).transformPoint(0.0f, 0.0f);
+  const Vec2 topLeft = node->worldTransform().transformPoint(0.0f, 0.0f);
   outX = topLeft.x;
   outY = topLeft.y;
 }
@@ -512,5 +534,5 @@ void Node::transformedBounds(
 }
 
 void Node::transformedBounds(const Node* node, float& outLeft, float& outTop, float& outRight, float& outBottom) {
-  transformedBounds(node, computeWorldTransform(node), outLeft, outTop, outRight, outBottom);
+  transformedBounds(node, node->worldTransform(), outLeft, outTop, outRight, outBottom);
 }

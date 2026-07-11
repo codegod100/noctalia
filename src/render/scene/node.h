@@ -1,11 +1,12 @@
 #pragma once
 
+#include "render/core/mat3.h"
+
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <vector>
 
-struct Mat3;
 class AnimationManager;
 class Renderer;
 class SelectPopupContext;
@@ -167,6 +168,10 @@ private:
   static bool
   pointInsideNode(const Node* node, float sceneX, float sceneY, float& localX, float& localY, bool includeHitOutset);
   static Node* hitTestImpl(Node* node, float px, float py);
+
+  [[nodiscard]] const Mat3& worldTransform() const;
+  void invalidateWorldTransform();
+
   NodeType m_type;
   float m_x = 0.0f;
   float m_y = 0.0f;
@@ -195,6 +200,9 @@ private:
   std::function<void(NodeInvalidation)> m_invalidationCallback;
   Node* m_parent = nullptr;
   std::vector<std::unique_ptr<Node>> m_children;
+
+  mutable Mat3 m_worldTransform = Mat3::identity();
+  mutable bool m_worldTransformDirty = true;
 
   void propagatePaintDirty();
   void propagateLayoutDirty();
