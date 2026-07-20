@@ -14,8 +14,8 @@ jobs:
         with:
           persist-credentials: false
       - uses: "DeterminateSystems/determinate-nix-action@v3"
-      - uses: "DeterminateSystems/flakehub-push@main"
       - uses: DeterminateSystems/flakehub-cache-action@main
+      - uses: "DeterminateSystems/flakehub-push@main"
         with:
           name: "codegod100/noctalia"
           rolling: true
