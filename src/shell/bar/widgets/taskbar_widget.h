@@ -60,6 +60,7 @@ public:
   void create() override;
   [[nodiscard]] bool onPointerEvent(const PointerEvent& event) override;
   [[nodiscard]] bool wantsBarHoverHighlight() const noexcept override { return false; }
+  [[nodiscard]] bool reservesMiddleClick(float sceneX, float sceneY) const noexcept override;
 
 private:
   struct TaskModel {
@@ -120,6 +121,7 @@ private:
   [[nodiscard]] static ColorRole onRoleForFill(ColorRole fill);
   [[nodiscard]] static bool taskInWorkspaceGroup(const TaskModel& task, const WorkspaceModel& ws);
   void activateTaskModel(const TaskModel& task);
+  void closeTaskModel(const TaskModel& task);
 
   CompositorPlatform& m_platform;
   ConfigService& m_configService;
@@ -167,6 +169,9 @@ private:
   std::unique_ptr<ContextMenuPopup> m_contextMenuPopup;
   std::vector<zwlr_foreign_toplevel_handle_v1*> m_contextMenuHandles;
   zwlr_foreign_toplevel_handle_v1* m_contextMenuPrimaryHandle = nullptr;
+  // KDE has no wlr foreign-toplevel handles; close targets use title/appId/uuid instead.
+  std::vector<ToplevelInfo> m_contextMenuKdeWindows;
+  ToplevelInfo m_contextMenuKdePrimary;
   std::uint64_t m_desktopEntriesVersion = 0;
   IconResolver m_iconResolver;
   Signal<>::ScopedConnection m_appIconColorizeConn;
